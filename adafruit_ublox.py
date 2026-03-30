@@ -42,84 +42,85 @@ __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_uBlox.git"
 
 # I2C DDC registers
-_REG_DATA_STREAM = const(0xFF)
-_REG_BYTES_AVAIL_MSB = const(0xFD)
+_REG_DATA_STREAM = const(0xFF)     # Register for reading/writing data stream
+_REG_BYTES_AVAIL_MSB = const(0xFD) # Number of bytes available to read, MSB
 
 # UBX sync characters
-_UBX_SYNC_1 = const(0xB5)
-_UBX_SYNC_2 = const(0x62)
+_UBX_SYNC_1 = const(0xB5) # First UBX protocol sync char
+_UBX_SYNC_2 = const(0x62) # Second UBX protocol sync char (b)
 
-# UBX message classes
-UBX_CLASS_NAV = const(0x01)
-UBX_CLASS_RXM = const(0x02)
-UBX_CLASS_INF = const(0x04)
-UBX_CLASS_ACK = const(0x05)
-UBX_CLASS_CFG = const(0x06)
-UBX_CLASS_UPD = const(0x09)
-UBX_CLASS_MON = const(0x0A)
-UBX_CLASS_AID = const(0x0B)
-UBX_CLASS_TIM = const(0x0D)
-UBX_CLASS_ESF = const(0x10)
-UBX_CLASS_MGA = const(0x13)
-UBX_CLASS_LOG = const(0x21)
-UBX_CLASS_SEC = const(0x27)
-UBX_CLASS_HNR = const(0x28)
-UBX_CLASS_NMEA = const(0xF0)
+# UBX protocol message class identifiers
+UBX_CLASS_NAV = const(0x01)  # Navigation Results
+UBX_CLASS_RXM = const(0x02)  # Receiver Manager Messages
+UBX_CLASS_INF = const(0x04)  # Information Messages
+UBX_CLASS_ACK = const(0x05)  # Acknowledgements
+UBX_CLASS_CFG = const(0x06)  # Configuration
+UBX_CLASS_UPD = const(0x09)  # Firmware Update
+UBX_CLASS_MON = const(0x0A)  # Monitoring
+UBX_CLASS_AID = const(0x0B)  # AssistNow Aiding
+UBX_CLASS_TIM = const(0x0D)  # Timing
+UBX_CLASS_ESF = const(0x10)  # External Sensor Fusion
+UBX_CLASS_MGA = const(0x13)  # Multiple GNSS Assistance
+UBX_CLASS_LOG = const(0x21)  # Logging
+UBX_CLASS_SEC = const(0x27)  # Security
+UBX_CLASS_HNR = const(0x28)  # High Rate Navigation
+UBX_CLASS_NMEA = const(0xF0)  # NMEA Standard Messages
 
-# UBX CFG message IDs
-UBX_CFG_PRT = const(0x00)
-UBX_CFG_MSG = const(0x01)
-UBX_CFG_RST = const(0x04)
-UBX_CFG_RATE = const(0x08)
-UBX_CFG_CFG = const(0x09)
-UBX_CFG_NAVX5 = const(0x23)
-UBX_CFG_GNSS = const(0x3E)
-UBX_CFG_PMS = const(0x86)
+# UBX CFG Message IDs
+UBX_CFG_PRT = const(0x00)    # Port Configuration
+UBX_CFG_MSG = const(0x01)    # Message Configuration
+UBX_CFG_RST = const(0x04)    # Reset Receiver
+UBX_CFG_RATE = const(0x08)   # Navigation/Measurement Rate Settings
+UBX_CFG_CFG = const(0x09)    # Clear, Save, and Load Configurations
+UBX_CFG_NAVX5 = const(0x23)  # Navigation Engine Settings
+UBX_CFG_GNSS = const(0x3E)   # GNSS Configuration
+UBX_CFG_PMS = const(0x86)    # Power Mode Setup
 
 # UBX ACK message IDs
-_UBX_ACK_ACK = const(0x01)
-_UBX_ACK_NAK = const(0x00)
+_UBX_ACK_ACK = const(0x01) # Message Acknowledged
+_UBX_ACK_NAK = const(0x00) # Message Not Acknowledged
 
-# Port IDs
-UBX_PORT_DDC = const(0)
-UBX_PORT_UART1 = const(1)
-UBX_PORT_UART2 = const(2)
-UBX_PORT_USB = const(3)
-UBX_PORT_SPI = const(4)
+# Port ID for different interfaces
+UBX_PORT_DDC = const(0)    # I2C / DDC port
+UBX_PORT_UART1 = const(1)  # UART1 port
+UBX_PORT_UART2 = const(2)  # UART2 port
+UBX_PORT_USB = const(3)    # USB port
+UBX_PORT_SPI = const(4)    # SPI port
 
-# Protocol masks
-UBX_PROTOCOL_UBX = const(0x0001)
-UBX_PROTOCOL_NMEA = const(0x0002)
-UBX_PROTOCOL_RTCM = const(0x0004)
-UBX_PROTOCOL_RTCM3 = const(0x0020)
+# Protocol flags for inProtoMask and outProtoMask
+UBX_PROTOCOL_UBX = const(0x0001)    # UBX protocol
+UBX_PROTOCOL_NMEA = const(0x0002)   # NMEA protocol
+UBX_PROTOCOL_RTCM = const(0x0004)   # RTCM2 protocol (only for inProtoMask)
+UBX_PROTOCOL_RTCM3 = const(0x0020)  # RTCM3 protocol
 
-# Send status
-UBX_SEND_OK = const(0)
-UBX_SEND_NAK = const(1)
-UBX_SEND_FAIL = const(2)
-UBX_SEND_TIMEOUT = const(3)
+# Return values for functions that wait for acknowledgment
+UBX_SEND_OK = const(0)       # Message was acknowledged (ACK)
+UBX_SEND_NAK = const(1)      # Message was not acknowledged (NAK)
+UBX_SEND_FAIL = const(2)     # Failed to send the message
+UBX_SEND_TIMEOUT = const(3)  # Timed out waiting for ACK/NAK
 
-# Parser states (internal)
-_WAIT_SYNC_1 = const(0)
-_WAIT_SYNC_2 = const(1)
-_GET_CLASS = const(2)
-_GET_ID = const(3)
-_GET_LEN_1 = const(4)
-_GET_LEN_2 = const(5)
-_GET_PAYLOAD = const(6)
-_GET_CK_A = const(7)
-_GET_CK_B = const(8)
+# Parser state machine
+_WAIT_SYNC_1 = const(0) # Waiting for first sync char (0xB5)
+_WAIT_SYNC_2 = const(1) # Waiting for second sync char (0x62)
+_GET_CLASS = const(2)   # Reading message class 
+_GET_ID = const(3)      # Reading message ID
+_GET_LEN_1 = const(4)   # Reading length LSB
+_GET_LEN_2 = const(5)   # Reading length MSB
+_GET_PAYLOAD = const(6) # Reading payload
+_GET_CK_A = const(7)    # Reading checksum A
+_GET_CK_B = const(8)    # Reading checksum B
 
-_MAX_PAYLOAD = const(64)
-_MAX_BUFFER = const(128)
+# Buffer for reading messages
+_MAX_PAYLOAD = const(64) # Maximum UBX payload size
+_MAX_BUFFER = const(128) # Buffer for message (header, payload, checksum)
 
-# NMEA message IDs (within class 0xF0)
-NMEA_GGA = const(0x00)
-NMEA_GLL = const(0x01)
-NMEA_GSA = const(0x02)
-NMEA_GSV = const(0x03)
-NMEA_RMC = const(0x04)
-NMEA_VTG = const(0x05)
+# NMEA message IDs
+NMEA_GGA = const(0x00) # Global Positioning System Fix Data
+NMEA_GLL = const(0x01) # Geographic Position - Latitude/Longitude and time
+NMEA_GSA = const(0x02) # GNSS DOP and Active Satellites
+NMEA_GSV = const(0x03) # GNSS Satellites in View
+NMEA_RMC = const(0x04) # Recommended Minimum Specific GNSS Data
+NMEA_VTG = const(0x05) # Course Over Ground and Ground Speed
 
 
 class UBloxDDC:
@@ -199,12 +200,13 @@ class UBloxDDC:
 class UBloxUBX:
     """UBX binary protocol engine for u-blox GPS modules.
 
-    :param UBloxDDC ddc: DDC transport instance
+    :param stream: Stream-like transport (UBloxDDC, busio.UART, or any object
+        with ``read()``, ``write()``, and ``in_waiting``)
     :param bool debug: Enable debug output, default False
     """
 
-    def __init__(self, ddc: UBloxDDC, *, debug: bool = False) -> None:
-        self._ddc = ddc
+    def __init__(self, stream, *, debug: bool = False) -> None:
+        self._stream = stream
         self._debug = debug
 
         # Parser state
@@ -289,7 +291,7 @@ class UBloxUBX:
                 )
             )
 
-        self._ddc.write(msg)
+        self._stream.write(msg)
         return True
 
     def send_with_ack(
@@ -346,18 +348,18 @@ class UBloxUBX:
     def check_messages(self) -> bool:
         """Process available bytes through the UBX parser.
 
-        Reads bytes from DDC and feeds them through the state machine.
+        Reads bytes from the stream and feeds them through the state machine.
         Triggers the callback when a complete valid message is received.
 
         :return: True if a complete message was received
         :rtype: bool
         """
         message_received = False
-        avail = self._ddc.in_waiting
+        avail = self._stream.in_waiting
         if avail == 0:
             return False
 
-        data = self._ddc.read(min(avail, _MAX_BUFFER))
+        data = self._stream.read(min(avail, _MAX_BUFFER))
         if data is None:
             return False
 
@@ -500,7 +502,7 @@ class UBloxUBX:
         vtg: bool = False,
         timeout: float = 0.5,
     ) -> int:
-        """Enable/disable individual NMEA sentences on the DDC port.
+        """Enable/disable individual NMEA sentences on the current port.
 
         :param bool gga: Enable GGA sentence
         :param bool gll: Enable GLL sentence

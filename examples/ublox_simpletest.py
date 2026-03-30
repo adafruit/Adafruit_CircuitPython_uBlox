@@ -9,17 +9,18 @@ import adafruit_ublox
 i2c = board.I2C()
 
 
-# Create DDC transport for the u-blox module with default I2C address (0x42)
+# --- I2C (DDC) setup ---
 ddc = adafruit_ublox.UBloxDDC(i2c)
-
-
-# Create a parser for handling NMEA sentences
 gps = adafruit_ublox.GPS_UBloxI2C(ddc)
-
-
-# Create a parser for handling UBX messages.
-debug_ubx = False # Set to True to print raw UBX messages to the console
+debug_ubx = False  # Set to True to print raw UBX messages to the console
 ubx = adafruit_ublox.UBloxUBX(ddc, debug=debug_ubx)
+
+# --- UART setup (alternative) ---
+# import busio
+# uart = busio.UART(board.TX, board.RX, baudrate=9600)
+# from adafruit_gps import GPS
+# gps = GPS(uart)  # UART already provides read/write/in_waiting/readline
+# ubx = adafruit_ublox.UBloxUBX(uart)
 
 
 print("Configuring NMEA output (GGA and RMC only)...")

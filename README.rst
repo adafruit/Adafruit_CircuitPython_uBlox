@@ -38,12 +38,6 @@ or individual libraries can be installed using
 `circup <https://github.com/adafruit/circup>`_.
 
 
-
-.. todo:: Describe the Adafruit product this library works with. For PCBs, you can also add the
-image from the assets folder in the PCB's GitHub repo.
-
-`Purchase one from the Adafruit shop <http://www.adafruit.com/products/>`_
-
 Installing from PyPI
 =====================
 .. note:: This library is not available on PyPI yet. Install documentation is included
@@ -52,18 +46,18 @@ Installing from PyPI
 .. todo:: Remove the above note if PyPI version is/will be available at time of release.
 
 On supported GNU/Linux systems like the Raspberry Pi, you can install the driver locally `from
-PyPI <https://pypi.org/project/Adafruit-circuitpython-ublox/>`_.
+PyPI <https://pypi.org/project/adafruit-circuitpython-ublox/>`_.
 To install for current user:
 
 .. code-block:: shell
 
-    pip3 install Adafruit-circuitpython-ublox
+    pip3 install adafruit-circuitpython-ublox
 
 To install system-wide (this may be required in some cases):
 
 .. code-block:: shell
 
-    sudo pip3 install Adafruit-circuitpython-ublox
+    sudo pip3 install adafruit-circuitpython-ublox
 
 To install in a virtual environment in your current project:
 
@@ -72,7 +66,7 @@ To install in a virtual environment in your current project:
     mkdir project-name && cd project-name
     python3 -m venv .venv
     source .env/bin/activate
-    pip3 install Adafruit-circuitpython-ublox
+    pip3 install adafruit-circuitpython-ublox
 
 Installing to a Connected CircuitPython Device with Circup
 ==========================================================
@@ -100,8 +94,7 @@ Or the following command to update an existing version:
 Usage Example
 =============
 
-.. todo:: Add a quick, simple example. It and other examples should live in the
-examples folder and be included in docs/examples.rst.
+See examples/ublox_simpletest.py for a demonstration of parsing and printing GPS location.
 
 Documentation
 =============

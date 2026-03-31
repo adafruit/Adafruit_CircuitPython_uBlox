@@ -26,28 +26,29 @@ Implementation Notes
 * Adafruit's Bus Device library: https://github.com/adafruit/Adafruit_CircuitPython_BusDevice
 """
 
-import time
 import struct
+import time
 
 try:
-    from typing import Optional, Callable
+    from typing import Callable, Optional
+
     from busio import I2C
 except ImportError:
     pass
 
-from micropython import const
 from adafruit_bus_device import i2c_device
+from micropython import const
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_uBlox.git"
 
 # I2C DDC registers
-_REG_DATA_STREAM = const(0xFF)     # Register for reading/writing data stream
-_REG_BYTES_AVAIL_MSB = const(0xFD) # Number of bytes available to read, MSB
+_REG_DATA_STREAM = const(0xFF)  # Register for reading/writing data stream
+_REG_BYTES_AVAIL_MSB = const(0xFD)  # Number of bytes available to read, MSB
 
 # UBX sync characters
-_UBX_SYNC_1 = const(0xB5) # First UBX protocol sync char
-_UBX_SYNC_2 = const(0x62) # Second UBX protocol sync char (b)
+_UBX_SYNC_1 = const(0xB5)  # First UBX protocol sync char
+_UBX_SYNC_2 = const(0x62)  # Second UBX protocol sync char (b)
 
 # UBX protocol message class identifiers
 UBX_CLASS_NAV = const(0x01)  # Navigation Results
@@ -67,60 +68,60 @@ UBX_CLASS_HNR = const(0x28)  # High Rate Navigation
 UBX_CLASS_NMEA = const(0xF0)  # NMEA Standard Messages
 
 # UBX CFG Message IDs
-UBX_CFG_PRT = const(0x00)    # Port Configuration
-UBX_CFG_MSG = const(0x01)    # Message Configuration
-UBX_CFG_RST = const(0x04)    # Reset Receiver
-UBX_CFG_RATE = const(0x08)   # Navigation/Measurement Rate Settings
-UBX_CFG_CFG = const(0x09)    # Clear, Save, and Load Configurations
+UBX_CFG_PRT = const(0x00)  # Port Configuration
+UBX_CFG_MSG = const(0x01)  # Message Configuration
+UBX_CFG_RST = const(0x04)  # Reset Receiver
+UBX_CFG_RATE = const(0x08)  # Navigation/Measurement Rate Settings
+UBX_CFG_CFG = const(0x09)  # Clear, Save, and Load Configurations
 UBX_CFG_NAVX5 = const(0x23)  # Navigation Engine Settings
-UBX_CFG_GNSS = const(0x3E)   # GNSS Configuration
-UBX_CFG_PMS = const(0x86)    # Power Mode Setup
+UBX_CFG_GNSS = const(0x3E)  # GNSS Configuration
+UBX_CFG_PMS = const(0x86)  # Power Mode Setup
 
 # UBX ACK message IDs
-_UBX_ACK_ACK = const(0x01) # Message Acknowledged
-_UBX_ACK_NAK = const(0x00) # Message Not Acknowledged
+_UBX_ACK_ACK = const(0x01)  # Message Acknowledged
+_UBX_ACK_NAK = const(0x00)  # Message Not Acknowledged
 
 # Port ID for different interfaces
-UBX_PORT_DDC = const(0)    # I2C / DDC port
+UBX_PORT_DDC = const(0)  # I2C / DDC port
 UBX_PORT_UART1 = const(1)  # UART1 port
 UBX_PORT_UART2 = const(2)  # UART2 port
-UBX_PORT_USB = const(3)    # USB port
-UBX_PORT_SPI = const(4)    # SPI port
+UBX_PORT_USB = const(3)  # USB port
+UBX_PORT_SPI = const(4)  # SPI port
 
 # Protocol flags for inProtoMask and outProtoMask
-UBX_PROTOCOL_UBX = const(0x0001)    # UBX protocol
-UBX_PROTOCOL_NMEA = const(0x0002)   # NMEA protocol
-UBX_PROTOCOL_RTCM = const(0x0004)   # RTCM2 protocol (only for inProtoMask)
+UBX_PROTOCOL_UBX = const(0x0001)  # UBX protocol
+UBX_PROTOCOL_NMEA = const(0x0002)  # NMEA protocol
+UBX_PROTOCOL_RTCM = const(0x0004)  # RTCM2 protocol (only for inProtoMask)
 UBX_PROTOCOL_RTCM3 = const(0x0020)  # RTCM3 protocol
 
 # Return values for functions that wait for acknowledgment
-UBX_SEND_OK = const(0)       # Message was acknowledged (ACK)
-UBX_SEND_NAK = const(1)      # Message was not acknowledged (NAK)
-UBX_SEND_FAIL = const(2)     # Failed to send the message
+UBX_SEND_OK = const(0)  # Message was acknowledged (ACK)
+UBX_SEND_NAK = const(1)  # Message was not acknowledged (NAK)
+UBX_SEND_FAIL = const(2)  # Failed to send the message
 UBX_SEND_TIMEOUT = const(3)  # Timed out waiting for ACK/NAK
 
 # Parser state machine
-_WAIT_SYNC_1 = const(0) # Waiting for first sync char (0xB5)
-_WAIT_SYNC_2 = const(1) # Waiting for second sync char (0x62)
-_GET_CLASS = const(2)   # Reading message class 
-_GET_ID = const(3)      # Reading message ID
-_GET_LEN_1 = const(4)   # Reading length LSB
-_GET_LEN_2 = const(5)   # Reading length MSB
-_GET_PAYLOAD = const(6) # Reading payload
-_GET_CK_A = const(7)    # Reading checksum A
-_GET_CK_B = const(8)    # Reading checksum B
+_WAIT_SYNC_1 = const(0)  # Waiting for first sync char (0xB5)
+_WAIT_SYNC_2 = const(1)  # Waiting for second sync char (0x62)
+_GET_CLASS = const(2)  # Reading message class
+_GET_ID = const(3)  # Reading message ID
+_GET_LEN_1 = const(4)  # Reading length LSB
+_GET_LEN_2 = const(5)  # Reading length MSB
+_GET_PAYLOAD = const(6)  # Reading payload
+_GET_CK_A = const(7)  # Reading checksum A
+_GET_CK_B = const(8)  # Reading checksum B
 
 # Buffer for reading messages
-_MAX_PAYLOAD = const(64) # Maximum UBX payload size
-_MAX_BUFFER = const(128) # Buffer for message (header, payload, checksum)
+_MAX_PAYLOAD = const(64)  # Maximum UBX payload size
+_MAX_BUFFER = const(128)  # Buffer for message (header, payload, checksum)
 
 # NMEA message IDs
-NMEA_GGA = const(0x00) # Global Positioning System Fix Data
-NMEA_GLL = const(0x01) # Geographic Position - Latitude/Longitude and time
-NMEA_GSA = const(0x02) # GNSS DOP and Active Satellites
-NMEA_GSV = const(0x03) # GNSS Satellites in View
-NMEA_RMC = const(0x04) # Recommended Minimum Specific GNSS Data
-NMEA_VTG = const(0x05) # Course Over Ground and Ground Speed
+NMEA_GGA = const(0x00)  # Global Positioning System Fix Data
+NMEA_GLL = const(0x01)  # Geographic Position - Latitude/Longitude and time
+NMEA_GSA = const(0x02)  # GNSS DOP and Active Satellites
+NMEA_GSV = const(0x03)  # GNSS Satellites in View
+NMEA_RMC = const(0x04)  # Recommended Minimum Specific GNSS Data
+NMEA_VTG = const(0x05)  # Course Over Ground and Ground Speed
 
 
 class UBloxDDC:
@@ -285,11 +286,7 @@ class UBloxUBX:
         msg[7 + length] = ck_b
 
         if self._debug:
-            print(
-                "UBX TX: class=0x{:02X} id=0x{:02X} len={}".format(
-                    msg_class, msg_id, length
-                )
-            )
+            print(f"UBX TX: class=0x{msg_class:02X} id=0x{msg_id:02X} len={length}")
 
         self._stream.write(msg)
         return True
@@ -315,34 +312,25 @@ class UBloxUBX:
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if self.check_messages():
-                if self._last_msg_class == UBX_CLASS_ACK:
-                    if (
-                        self._last_payload_len >= 2
-                        and self._last_payload[0] == msg_class
-                        and self._last_payload[1] == msg_id
-                    ):
-                        if self._last_msg_id == _UBX_ACK_ACK:
-                            if self._debug:
-                                print(
-                                    "UBX ACK: OK for 0x{:02X} 0x{:02X}".format(
-                                        msg_class, msg_id
-                                    )
-                                )
-                            return UBX_SEND_OK
-                        if self._last_msg_id == _UBX_ACK_NAK:
-                            if self._debug:
-                                print(
-                                    "UBX ACK: NAK for 0x{:02X} 0x{:02X}".format(
-                                        msg_class, msg_id
-                                    )
-                                )
-                            return UBX_SEND_NAK
+            if not self.check_messages():
+                continue
+            if self._last_msg_class != UBX_CLASS_ACK:
+                continue
+            if self._last_payload_len < 2:
+                continue
+            if self._last_payload[0] != msg_class or self._last_payload[1] != msg_id:
+                continue
+            if self._last_msg_id == _UBX_ACK_ACK:
+                if self._debug:
+                    print(f"UBX ACK: OK for 0x{msg_class:02X} 0x{msg_id:02X}")
+                return UBX_SEND_OK
+            if self._last_msg_id == _UBX_ACK_NAK:
+                if self._debug:
+                    print(f"UBX ACK: NAK for 0x{msg_class:02X} 0x{msg_id:02X}")
+                return UBX_SEND_NAK
 
         if self._debug:
-            print(
-                "UBX ACK: TIMEOUT for 0x{:02X} 0x{:02X}".format(msg_class, msg_id)
-            )
+            print(f"UBX ACK: TIMEOUT for 0x{msg_class:02X} 0x{msg_id:02X}")
         return UBX_SEND_TIMEOUT
 
     def check_messages(self) -> bool:
@@ -376,48 +364,53 @@ class UBloxUBX:
         :return: True if a complete valid message was received
         :rtype: bool
         """
-        if self._state == _WAIT_SYNC_1:
+        state = self._state
+
+        if state == _WAIT_SYNC_1:
             if byte == _UBX_SYNC_1:
                 self._state = _WAIT_SYNC_2
+            return False
 
-        elif self._state == _WAIT_SYNC_2:
-            if byte == _UBX_SYNC_2:
-                self._state = _GET_CLASS
-            else:
-                self._state = _WAIT_SYNC_1
+        if state == _WAIT_SYNC_2:
+            self._state = _GET_CLASS if byte == _UBX_SYNC_2 else _WAIT_SYNC_1
+            return False
 
-        elif self._state == _GET_CLASS:
+        return self._parse_frame_byte(byte)
+
+    def _parse_frame_byte(self, byte: int) -> bool:
+        """Parse a byte within a UBX frame (after sync).
+
+        :param int byte: Byte to parse
+        :return: True if a complete valid message was received
+        :rtype: bool
+        """
+        state = self._state
+
+        if state == _GET_CLASS:
             self._msg_class = byte
             self._ck_a = byte
             self._ck_b = byte
             self._state = _GET_ID
 
-        elif self._state == _GET_ID:
+        elif state == _GET_ID:
             self._msg_id = byte
             self._ck_a = (self._ck_a + byte) & 0xFF
             self._ck_b = (self._ck_b + self._ck_a) & 0xFF
             self._state = _GET_LEN_1
 
-        elif self._state == _GET_LEN_1:
+        elif state == _GET_LEN_1:
             self._payload_len = byte
             self._ck_a = (self._ck_a + byte) & 0xFF
             self._ck_b = (self._ck_b + self._ck_a) & 0xFF
             self._state = _GET_LEN_2
 
-        elif self._state == _GET_LEN_2:
+        elif state == _GET_LEN_2:
             self._payload_len |= byte << 8
             self._ck_a = (self._ck_a + byte) & 0xFF
             self._ck_b = (self._ck_b + self._ck_a) & 0xFF
-            if self._payload_len > _MAX_PAYLOAD:
-                self._state = _WAIT_SYNC_1
-            else:
-                self._payload_counter = 0
-                if self._payload_len == 0:
-                    self._state = _GET_CK_A
-                else:
-                    self._state = _GET_PAYLOAD
+            self._finish_length()
 
-        elif self._state == _GET_PAYLOAD:
+        elif state == _GET_PAYLOAD:
             self._payload_buf[self._payload_counter] = byte
             self._ck_a = (self._ck_a + byte) & 0xFF
             self._ck_b = (self._ck_b + self._ck_a) & 0xFF
@@ -425,48 +418,56 @@ class UBloxUBX:
             if self._payload_counter == self._payload_len:
                 self._state = _GET_CK_A
 
-        elif self._state == _GET_CK_A:
-            if byte == self._ck_a:
-                self._state = _GET_CK_B
-            else:
-                self._state = _WAIT_SYNC_1
+        elif state == _GET_CK_A:
+            self._state = _GET_CK_B if byte == self._ck_a else _WAIT_SYNC_1
 
-        elif self._state == _GET_CK_B:
+        elif state == _GET_CK_B:
             self._state = _WAIT_SYNC_1
             if byte == self._ck_b:
-                # Valid message received
-                self._last_msg_class = self._msg_class
-                self._last_msg_id = self._msg_id
-                self._last_payload_len = self._payload_len
-
-                # Store small payloads for ACK matching
-                if self._payload_len <= len(self._last_payload):
-                    self._last_payload[: self._payload_len] = self._payload_buf[
-                        : self._payload_len
-                    ]
-
-                if self._debug:
-                    print(
-                        "UBX RX: class=0x{:02X} id=0x{:02X} len={}".format(
-                            self._msg_class, self._msg_id, self._payload_len
-                        )
-                    )
-
-                if self._callback is not None:
-                    self._callback(
-                        self._msg_class,
-                        self._msg_id,
-                        bytes(self._payload_buf[: self._payload_len]),
-                    )
-                return True
+                return self._on_message_complete()
 
         return False
 
+    def _finish_length(self) -> None:
+        """Transition state after receiving the complete length field."""
+        if self._payload_len > _MAX_PAYLOAD:
+            self._state = _WAIT_SYNC_1
+        elif self._payload_len == 0:
+            self._state = _GET_CK_A
+        else:
+            self._payload_counter = 0
+            self._state = _GET_PAYLOAD
+
+    def _on_message_complete(self) -> bool:
+        """Handle a fully received and validated UBX message.
+
+        :return: True always (a valid message was received)
+        :rtype: bool
+        """
+        self._last_msg_class = self._msg_class
+        self._last_msg_id = self._msg_id
+        self._last_payload_len = self._payload_len
+
+        if self._payload_len <= len(self._last_payload):
+            self._last_payload[: self._payload_len] = self._payload_buf[: self._payload_len]
+
+        if self._debug:
+            print(
+                f"UBX RX: class=0x{self._msg_class:02X} "
+                f"id=0x{self._msg_id:02X} len={self._payload_len}"
+            )
+
+        if self._callback is not None:
+            self._callback(
+                self._msg_class,
+                self._msg_id,
+                bytes(self._payload_buf[: self._payload_len]),
+            )
+        return True
+
     # --- High-level configuration helpers ---
 
-    def set_ubx_only(
-        self, port_id: int = UBX_PORT_DDC, timeout: float = 0.5
-    ) -> int:
+    def set_ubx_only(self, port_id: int = UBX_PORT_DDC, timeout: float = 0.5) -> int:
         """Configure a port to use UBX protocol only (disable NMEA).
 
         :param int port_id: Port to configure, default UBX_PORT_DDC
@@ -481,7 +482,7 @@ class UBloxUBX:
         if port_id == UBX_PORT_DDC:
             # Mode field: I2C address in bits 7:1
             struct.pack_into("<I", payload, 4, 0x42 << 1)
-        elif port_id in (UBX_PORT_UART1, UBX_PORT_UART2):
+        elif port_id in {UBX_PORT_UART1, UBX_PORT_UART2}:
             # 8N1 mode
             struct.pack_into("<I", payload, 4, 0x000)
 
@@ -493,44 +494,28 @@ class UBloxUBX:
 
     def set_nmea_output(
         self,
+        enabled: "Optional[set]" = None,
         *,
-        gga: bool = True,
-        gll: bool = False,
-        gsa: bool = False,
-        gsv: bool = False,
-        rmc: bool = True,
-        vtg: bool = False,
         timeout: float = 0.5,
     ) -> int:
         """Enable/disable individual NMEA sentences on the current port.
 
-        :param bool gga: Enable GGA sentence
-        :param bool gll: Enable GLL sentence
-        :param bool gsa: Enable GSA sentence
-        :param bool gsv: Enable GSV sentence
-        :param bool rmc: Enable RMC sentence
-        :param bool vtg: Enable VTG sentence
+        :param set enabled: Set of NMEA message IDs to enable (e.g.
+            ``{NMEA_GGA, NMEA_RMC}``). All others are disabled.
+            Defaults to ``{NMEA_GGA, NMEA_RMC}`` if None.
         :param float timeout: ACK timeout in seconds per message
         :return: UBX_SEND_OK if all succeeded, or first failure status
         :rtype: int
         """
-        sentences = (
-            (NMEA_GGA, gga),
-            (NMEA_GLL, gll),
-            (NMEA_GSA, gsa),
-            (NMEA_GSV, gsv),
-            (NMEA_RMC, rmc),
-            (NMEA_VTG, vtg),
-        )
-        for nmea_id, enabled in sentences:
-            # CFG-MSG payload: class, id, rate_DDC, rate_UART1, rate_UART2, rate_USB, rate_SPI, reserved
-            rate = 0x01 if enabled else 0x00
-            payload = bytes(
-                [UBX_CLASS_NMEA, nmea_id, rate, 0x00, 0x00, 0x00, 0x00, 0x00]
-            )
-            status = self.send_with_ack(
-                UBX_CLASS_CFG, UBX_CFG_MSG, payload, timeout
-            )
+        if enabled is None:
+            enabled = {NMEA_GGA, NMEA_RMC}
+        all_sentences = (NMEA_GGA, NMEA_GLL, NMEA_GSA, NMEA_GSV, NMEA_RMC, NMEA_VTG)
+        for nmea_id in all_sentences:
+            # CFG-MSG payload: class, id, rate_DDC, rate_UART1,
+            # rate_UART2, rate_USB, rate_SPI, reserved
+            rate = 0x01 if nmea_id in enabled else 0x00
+            payload = bytes([UBX_CLASS_NMEA, nmea_id, rate, 0x00, 0x00, 0x00, 0x00, 0x00])
+            status = self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_MSG, payload, timeout)
             if status != UBX_SEND_OK:
                 return status
         return UBX_SEND_OK

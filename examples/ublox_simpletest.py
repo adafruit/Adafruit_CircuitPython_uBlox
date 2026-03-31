@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import time
+
 import board
+
 import adafruit_ublox
 
 # Create I2C bus using the board's default I2C pins
@@ -18,7 +20,10 @@ gps = adafruit_ublox.GPS_UBloxI2C(ddc)
 
 
 print("Attempting to configure NMEA output (GGA and RMC only)...")
-if ubx.set_nmea_output(gga=True, rmc=True) is not adafruit_ublox.UBX_SEND_OK:
+if (
+    ubx.set_nmea_output({adafruit_ublox.NMEA_GGA, adafruit_ublox.NMEA_RMC})
+    is not adafruit_ublox.UBX_SEND_OK
+):
     raise RuntimeError("Failed to configure NMEA output")
 
 print("Attempting to set 1 Hz update rate...")

@@ -8,27 +8,20 @@ import adafruit_ublox
 # Create I2C bus using the board's default I2C pins
 i2c = board.I2C()
 
-
-# --- I2C (DDC) setup ---
-ddc = adafruit_ublox.UBloxDDC(i2c)
-gps = adafruit_ublox.GPS_UBloxI2C(ddc)
 debug_ubx = False  # Set to True to print raw UBX messages to the console
+# Create the DDC (I2C) connection to the u-blox GPS module
+ddc = adafruit_ublox.UBloxDDC(i2c)
+# Create the UBX module for parsing UBX messages and configuring the GPS module
 ubx = adafruit_ublox.UBloxUBX(ddc, debug=debug_ubx)
-
-# --- UART setup (alternative) ---
-# import busio
-# uart = busio.UART(board.TX, board.RX, baudrate=9600)
-# from adafruit_gps import GPS
-# gps = GPS(uart)  # UART already provides read/write/in_waiting/readline
-# ubx = adafruit_ublox.UBloxUBX(uart)
+# Create the GPS module for parsing NMEA messages
+gps = adafruit_ublox.GPS_UBloxI2C(ddc)
 
 
-print("Configuring NMEA output (GGA and RMC only)...")
+print("Attempting to configure NMEA output (GGA and RMC only)...")
 if ubx.set_nmea_output(gga=True, rmc=True) is not adafruit_ublox.UBX_SEND_OK:
     raise RuntimeError("Failed to configure NMEA output")
 
-# Set 1Hz update rate
-print("Setting 1 Hz update rate...")
+print("Attempting to set 1 Hz update rate...")
 if ubx.set_update_rate(1) is not adafruit_ublox.UBX_SEND_OK:
     raise RuntimeError("Failed to set update rate")
 

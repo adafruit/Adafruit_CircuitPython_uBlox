@@ -454,7 +454,7 @@ class UBloxUBX:
         if self._debug:
             print(
                 f"UBX RX: class=0x{self._msg_class:02X} "
-                f"id=0x{self._msg_id:02X} len={self._payload_len}"
+                + f"id=0x{self._msg_id:02X} len={self._payload_len}"
             )
 
         if self._callback is not None:

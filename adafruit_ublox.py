@@ -94,12 +94,6 @@ UBX_PROTOCOL_NMEA = const(0x0002)  # NMEA protocol
 UBX_PROTOCOL_RTCM = const(0x0004)  # RTCM2 protocol (only for inProtoMask)
 UBX_PROTOCOL_RTCM3 = const(0x0020)  # RTCM3 protocol
 
-# Return values for functions that wait for acknowledgment
-UBX_SEND_OK = const(0)  # Message was acknowledged (ACK)
-UBX_SEND_NAK = const(1)  # Message was not acknowledged (NAK)
-UBX_SEND_FAIL = const(2)  # Failed to send the message
-UBX_SEND_TIMEOUT = const(3)  # Timed out waiting for ACK/NAK
-
 # Parser state machine
 _WAIT_SYNC_1 = const(0)  # Waiting for first sync char (0xB5)
 _WAIT_SYNC_2 = const(1)  # Waiting for second sync char (0x62)
@@ -297,18 +291,16 @@ class UBloxUBX:
         msg_id: int,
         payload: bytes = b"",
         timeout: float = 0.5,
-    ) -> int:
+    ):
         """Send a UBX message and wait for ACK/NAK.
 
         :param int msg_class: UBX message class
         :param int msg_id: UBX message ID
         :param bytes payload: Message payload
         :param float timeout: Timeout in seconds, default 0.5
-        :return: UBX_SEND_OK, UBX_SEND_NAK, UBX_SEND_FAIL, or UBX_SEND_TIMEOUT
-        :rtype: int
         """
         if not self.send(msg_class, msg_id, payload):
-            return UBX_SEND_FAIL
+            raise RuntimeError(f"Failed to send UBX message 0x{msg_class:02X} 0x{msg_id:02X}")
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -323,15 +315,11 @@ class UBloxUBX:
             if self._last_msg_id == _UBX_ACK_ACK:
                 if self._debug:
                     print(f"UBX ACK: OK for 0x{msg_class:02X} 0x{msg_id:02X}")
-                return UBX_SEND_OK
+                return
             if self._last_msg_id == _UBX_ACK_NAK:
-                if self._debug:
-                    print(f"UBX ACK: NAK for 0x{msg_class:02X} 0x{msg_id:02X}")
-                return UBX_SEND_NAK
+                raise RuntimeError(f"UBX message 0x{msg_class:02X} 0x{msg_id:02X} was NAK'd!")
 
-        if self._debug:
-            print(f"UBX ACK: TIMEOUT for 0x{msg_class:02X} 0x{msg_id:02X}")
-        return UBX_SEND_TIMEOUT
+        raise RuntimeError(f"UBX message 0x{msg_class:02X} 0x{msg_id:02X} timed out!")
 
     def check_messages(self) -> bool:
         """Process available bytes through the UBX parser.
@@ -467,13 +455,11 @@ class UBloxUBX:
 
     # --- High-level configuration helpers ---
 
-    def set_ubx_only(self, port_id: int = UBX_PORT_DDC, timeout: float = 0.5) -> int:
+    def set_ubx_only(self, port_id: int = UBX_PORT_DDC, timeout: float = 0.5):
         """Configure a port to use UBX protocol only (disable NMEA).
 
         :param int port_id: Port to configure, default UBX_PORT_DDC
         :param float timeout: ACK timeout in seconds
-        :return: UBX_SEND_OK, UBX_SEND_NAK, UBX_SEND_FAIL, or UBX_SEND_TIMEOUT
-        :rtype: int
         """
         # Build 20-byte CFG-PRT payload
         payload = bytearray(20)
@@ -490,22 +476,20 @@ class UBloxUBX:
         struct.pack_into("<H", payload, 12, UBX_PROTOCOL_UBX)
         struct.pack_into("<H", payload, 14, UBX_PROTOCOL_UBX)
 
-        return self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_PRT, payload, timeout)
+        self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_PRT, payload, timeout)
 
     def set_nmea_output(
         self,
         enabled: "Optional[set]" = None,
         *,
         timeout: float = 0.5,
-    ) -> int:
+    ):
         """Enable/disable individual NMEA sentences on the current port.
 
         :param set enabled: Set of NMEA message IDs to enable (e.g.
             ``{NMEA_GGA, NMEA_RMC}``). All others are disabled.
             Defaults to ``{NMEA_GGA, NMEA_RMC}`` if None.
         :param float timeout: ACK timeout in seconds per message
-        :return: UBX_SEND_OK if all succeeded, or first failure status
-        :rtype: int
         """
         if enabled is None:
             enabled = {NMEA_GGA, NMEA_RMC}
@@ -515,18 +499,13 @@ class UBloxUBX:
             # rate_UART2, rate_USB, rate_SPI, reserved
             rate = 0x01 if nmea_id in enabled else 0x00
             payload = bytes([UBX_CLASS_NMEA, nmea_id, rate, 0x00, 0x00, 0x00, 0x00, 0x00])
-            status = self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_MSG, payload, timeout)
-            if status != UBX_SEND_OK:
-                return status
-        return UBX_SEND_OK
+            self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_MSG, payload, timeout)
 
-    def set_update_rate(self, rate_hz: int = 1, timeout: float = 0.5) -> int:
+    def set_update_rate(self, rate_hz: int = 1, timeout: float = 0.5):
         """Set navigation measurement/update rate.
 
         :param int rate_hz: Update rate in Hz (1, 2, 5, or 10)
         :param float timeout: ACK timeout in seconds
-        :return: UBX_SEND_OK, UBX_SEND_NAK, UBX_SEND_FAIL, or UBX_SEND_TIMEOUT
-        :rtype: int
         """
         rates = {
             1: 1000,
@@ -540,7 +519,7 @@ class UBloxUBX:
 
         # CFG-RATE payload: measRate(2), navRate(2), timeRef(2)
         payload = struct.pack("<HHH", meas_rate, 1, 1)
-        return self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_RATE, payload, timeout)
+        self.send_with_ack(UBX_CLASS_CFG, UBX_CFG_RATE, payload, timeout)
 
 
 class GPS_UBloxI2C:

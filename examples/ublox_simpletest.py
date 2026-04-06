@@ -18,18 +18,11 @@ ubx = adafruit_ublox.UBloxUBX(ddc, debug=debug_ubx)
 # Create the GPS module for parsing NMEA messages
 gps = adafruit_ublox.GPS_UBloxI2C(ddc)
 
-
 print("Attempting to configure NMEA output (GGA and RMC only)...")
-if (
-    ubx.set_nmea_output({adafruit_ublox.NMEA_GGA, adafruit_ublox.NMEA_RMC})
-    is not adafruit_ublox.UBX_SEND_OK
-):
-    raise RuntimeError("Failed to configure NMEA output")
+ubx.set_nmea_output({adafruit_ublox.NMEA_GGA, adafruit_ublox.NMEA_RMC})
 
 print("Attempting to set 1 Hz update rate...")
-if ubx.set_update_rate(1) is not adafruit_ublox.UBX_SEND_OK:
-    raise RuntimeError("Failed to set update rate")
-
+ubx.set_update_rate(1)
 
 last_print = time.monotonic()
 while True:
